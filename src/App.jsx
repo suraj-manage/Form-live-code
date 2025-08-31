@@ -1,162 +1,284 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import "./App.css";
 
-export default function GoogleFormEditableOptions() {
-  const [questions, setQuestions] = useState([
-    { id: 1, text: "Untitled Question", type: "radio", options: ["Option 1", "Option 2"] },
-  ]);
+export default function App() {
+  const initialCode = `<form>
+  <div class="question">
+    <p>What is your favorite color?</p>
+    <label><input type="radio" name="q0" value="Red" /> Red</label>
+    <label><input type="radio" name="q0" value="Blue" /> Blue</label>
+    <label><input type="radio" name="q0" value="Green" /> Green</label>
+  </div>
+</form>`;
 
-  const escapeHtml = (str) =>
-    String(str)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+  const [code, setCode] = useState(initialCode);
+  const [questions, setQuestions] = useState([]);
+  const parseTimer = useRef(null);
 
-  const generateCode = () => {
-    return `
-<div class="form">
-  ${questions
-    .map(
-      (q, qi) => `
-  <div class="question-block" data-id="${q.id}">
-    <div class="question">${escapeHtml(q.text)}</div>
-    ${q.options
-      .map(
-        (opt, oi) => `
-    <div class="option">
-      <input type="${q.type}" name="q${qi}" id="q${qi}opt${oi}">
-      <label for="q${qi}opt${oi}">${escapeHtml(opt)}</label>
-    </div>`
-      )
-      .join("")}
-  </div>`
-    )
-    .join("\n")}
-</div>`.trim();
+  const parseCodeToQuestions = (html) => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const form = doc.querySelector("form");
+      if (!form) return [];
+
+      const qNodes = form.querySelectorAll(".question");
+      const parsed = Array.from(qNodes).map((qNode) => {
+        const p = qNode.querySelector("p");
+        const text = p ? p.textContent.trim() : "Untitled Question";
+
+        const labels = qNode.querySelectorAll("label");
+        const options = Array.from(labels).map((label) => {
+          const input = label.querySelector("input");
+          // Set text same as value
+          return input?.getAttribute("value") ?? label.textContent.trim();
+        });
+
+        const firstInput = qNode.querySelector("input");
+        const type = firstInput?.getAttribute("type") === "checkbox" ? "checkbox" : "radio";
+
+        return { type, text, options };
+      });
+
+      return parsed;
+    } catch (err) {
+      console.error("parse error", err);
+      return [];
+    }
   };
 
-  const [code, setCode] = useState(generateCode());
+  const formFromDocToCode = (doc) => {
+    const form = doc.querySelector("form");
+    if (!form) return "<form></form>";
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(form);
+  };
 
   useEffect(() => {
-    setCode(generateCode());
-  }, [questions]);
+    clearTimeout(parseTimer.current);
+    parseTimer.current = setTimeout(() => {
+      const parsed = parseCodeToQuestions(code);
+      setQuestions(parsed);
+    }, 200);
+    return () => clearTimeout(parseTimer.current);
+  }, [code]);
 
-  const addQuestion = () => {
-    setQuestions([
-      ...questions,
-      { id: Date.now(), text: `Question ${questions.length + 1}`, type: "radio", options: ["Option 1"] },
-    ]);
+  const mutateQuestionInCode = (qIndex, mutateFn) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(code, "text/html");
+    const form = doc.querySelector("form");
+    if (!form) return;
+    const qNodes = form.querySelectorAll(".question");
+    const qNode = qNodes[qIndex];
+    if (!qNode) return;
+    mutateFn(qNode, doc, qIndex);
+    const newCode = formFromDocToCode(doc);
+    setCode(newCode);
+    setQuestions(parseCodeToQuestions(newCode));
   };
 
-  const addOption = (qid) => {
-    setQuestions(
-      questions.map((q) =>
-        q.id === qid ? { ...q, options: [...q.options, `Option ${q.options.length + 1}`] } : q
-      )
-    );
+  const handlePreviewQuestionTextChange = (qIndex, newText) => {
+    mutateQuestionInCode(qIndex, (qNode, doc) => {
+      let p = qNode.querySelector("p");
+      if (!p) {
+        p = doc.createElement("p");
+        qNode.insertBefore(p, qNode.firstChild);
+      }
+      p.textContent = newText;
+
+      // Also update first input value to match question text if desired
+      const firstInput = qNode.querySelector("input");
+      if (firstInput) firstInput.setAttribute("value", newText);
+    });
   };
 
-  const toggleType = (qid, type) => {
-    setQuestions(questions.map((q) => (q.id === qid ? { ...q, type } : q)));
+  const handlePreviewOptionTextChange = (qIndex, optionIndex, newText) => {
+    mutateQuestionInCode(qIndex, (qNode, doc) => {
+      const labels = qNode.querySelectorAll("label");
+      if (!labels[optionIndex]) return;
+      const label = labels[optionIndex];
+      const input = label.querySelector("input");
+      if (input) input.setAttribute("value", newText);
+
+      // Remove old label text and append newText
+      while (label.childNodes.length > 1) label.removeChild(label.lastChild);
+      label.appendChild(doc.createTextNode(newText));
+    });
   };
 
-  const changeQuestionText = (qid, text) => {
-    setQuestions(questions.map((q) => (q.id === qid ? { ...q, text } : q)));
+  const handleAddOption = (qIndex) => {
+    mutateQuestionInCode(qIndex, (qNode, doc) => {
+      const existingInputs = qNode.querySelectorAll("input");
+      const optionCount = existingInputs.length;
+      const firstInput = qNode.querySelector("input");
+      const type = firstInput?.getAttribute("type") || "radio";
+      const nameAttr = type === "checkbox" ? `q${qIndex}[]` : `q${qIndex}`;
+      const label = doc.createElement("label");
+      const input = doc.createElement("input");
+      input.setAttribute("type", type);
+      input.setAttribute("name", nameAttr);
+      input.setAttribute("value", `Option ${optionCount + 1}`);
+      label.appendChild(input);
+      label.appendChild(doc.createTextNode(`Option ${optionCount + 1}`));
+      qNode.appendChild(doc.createTextNode("\n    "));
+      qNode.appendChild(label);
+    });
   };
 
-  const changeOptionText = (qid, index, text) => {
-    setQuestions(
-      questions.map((q) =>
-        q.id === qid
-          ? {
-              ...q,
-              options: q.options.map((opt, i) => (i === index ? text : opt)),
-            }
-          : q
-      )
-    );
+  const handleAddQuestion = () => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(code, "text/html");
+    const form = doc.querySelector("form");
+    if (!form) return;
+    const newIndex = form.querySelectorAll(".question").length;
+    const qDiv = doc.createElement("div");
+    qDiv.setAttribute("class", "question");
+    qDiv.appendChild(doc.createTextNode("\n    "));
+    const p = doc.createElement("p");
+    p.textContent = "New Question";
+    qDiv.appendChild(p);
+    qDiv.appendChild(doc.createTextNode("\n    "));
+    const label = doc.createElement("label");
+    const input = doc.createElement("input");
+    input.setAttribute("type", "radio");
+    input.setAttribute("name", `q${newIndex}`);
+    input.setAttribute("value", "Option 1");
+    label.appendChild(input);
+    label.appendChild(doc.createTextNode("Option 1"));
+    qDiv.appendChild(label);
+    form.appendChild(doc.createTextNode("\n  "));
+    form.appendChild(qDiv);
+    form.appendChild(doc.createTextNode("\n"));
+    const newCode = formFromDocToCode(doc);
+    setCode(newCode);
+    setQuestions(parseCodeToQuestions(newCode));
   };
 
-  const pane = { width: "50%", padding: 10, boxSizing: "border-box", height: "100vh", overflow: "auto" };
+  const handleToggleType = (qIndex, newType) => {
+    mutateQuestionInCode(qIndex, (qNode) => {
+      const inputs = qNode.querySelectorAll("input");
+      inputs.forEach((inp) => {
+        inp.setAttribute("type", newType);
+        if (newType === "checkbox") inp.setAttribute("name", `q${qIndex}[]`);
+        else inp.setAttribute("name", `q${qIndex}`);
+      });
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = {};
+    questions.forEach((q, qi) => {
+      const key = `q${qi}`;
+      if (q.type === "radio") payload[q.text] = fd.get(key) || null;
+      else payload[q.text] = fd.getAll(key + "[]");
+    });
+    console.log("Submitting:", payload);
+    try {
+      const res = await fetch("http://localhost:5000/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      console.log("Backend:", data);
+      alert("Submitted successfully");
+    } catch (err) {
+      console.error(err);
+      alert("Submit failed");
+    }
+  };
+
+  useEffect(() => {
+    setQuestions(parseCodeToQuestions(code));
+  }, []);
 
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "system-ui, sans-serif" }}>
-      {/* Left: Code editor */}
-      <div style={{ ...pane, background: "#f7f7f7", borderRight: "2px solid #ddd" }}>
-        <h3 style={{ marginTop: 0 }}>Editable Code</h3>
+    <div className="container">
+      <div className="left">
+        <h3>Form Code (editable)</h3>
         <textarea
+          className="editor"
           value={code}
-          readOnly
-          style={{ width: "100%", height: "90%", fontFamily: "monospace", fontSize: 14, resize: "none" }}
-          spellCheck={false}
+          onChange={(e) => setCode(e.target.value)}
         />
       </div>
 
-      {/* Right: Preview */}
-      <div style={{ ...pane, background: "#fff" }}>
-        <h3 style={{ marginTop: 0 }}>Form Preview</h3>
+      <div className="right">
+        <h3>Preview</h3>
+        <form onSubmit={handleSubmit}>
+          {questions.length === 0 && <div>No questions found in code.</div>}
 
-        {questions.map((q) => (
-          <div key={q.id} style={{ border: "1px solid #ddd", padding: 10, marginBottom: 12, borderRadius: 6 }}>
-            {/* Question title */}
-            <input
-              type="text"
-              value={q.text}
-              onChange={(e) => changeQuestionText(q.id, e.target.value)}
-              style={{ fontWeight: "bold", fontSize: 16, marginBottom: 8, width: "100%" }}
-            />
-
-            {/* Options */}
-            {q.options.map((opt, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, margin: "4px 0" }}>
-                <input type={q.type} name={`q${q.id}`} />
+          {questions.map((q, qi) => (
+            <div className="question-block" key={qi}>
+              <div className="q-row">
                 <input
-                  type="text"
-                  value={opt}
-                  onChange={(e) => changeOptionText(q.id, i, e.target.value)}
-                  style={{ flex: 1 }}
+                  className="question-input"
+                  value={q.text}
+                  onChange={(e) =>
+                    handlePreviewQuestionTextChange(qi, e.target.value)
+                  }
                 />
+                <div className="type-switch">
+                  <label>
+                    <input
+                      type="radio"
+                      name={`type-${qi}`}
+                      checked={q.type === "radio"}
+                      onChange={() => handleToggleType(qi, "radio")}
+                    />{" "}
+                    radio
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name={`type-${qi}`}
+                      checked={q.type === "checkbox"}
+                      onChange={() => handleToggleType(qi, "checkbox")}
+                    />{" "}
+                    checkbox
+                  </label>
+                </div>
               </div>
-            ))}
 
-            <button onClick={() => addOption(q.id)}>➕ Add Option</button>
+              <div className="options">
+                {q.options.map((opt, oi) => (
+                  <label className="option" key={oi}>
+                    <input
+                      type={q.type}
+                      name={q.type === "checkbox" ? `q${qi}[]` : `q${qi}`}
+                      value={opt}
+                    />
+                    <input
+                      className="option-input"
+                      value={opt}
+                      onChange={(e) =>
+                        handlePreviewOptionTextChange(qi, oi, e.target.value)
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
 
-            <div style={{ marginTop: 6 }}>
-              <span>Type: </span>
-              <button
-                onClick={() => toggleType(q.id, "radio")}
-                disabled={q.type === "radio"}
-                style={{ opacity: q.type === "radio" ? 0.6 : 1, marginRight: 6 }}
-              >
-                Radio
-              </button>
-              <button
-                onClick={() => toggleType(q.id, "checkbox")}
-                disabled={q.type === "checkbox"}
-                style={{ opacity: q.type === "checkbox" ? 0.6 : 1 }}
-              >
-                Checkbox
-              </button>
+              <div className="q-actions">
+                <button type="button" onClick={() => handleAddOption(qi)}>
+                  + Add Option
+                </button>
+              </div>
             </div>
+          ))}
+
+          <div className="form-actions">
+            <button type="button" onClick={handleAddQuestion}>
+              + Add Question
+            </button>
+            <button type="submit">Submit</button>
           </div>
-        ))}
+        </form>
 
-        <button onClick={addQuestion} style={{ marginTop: 10 }}>
-          ➕ Add Question
-        </button>
-
-        <h4 style={{ marginTop: 20 }}>Live Render:</h4>
-        <div
-          dangerouslySetInnerHTML={{ __html: code }}
-          style={{ border: "1px solid #ccc", padding: 12, borderRadius: 6 }}
-        />
-
-        <style>{`
-          .form { display: block; }
-          .question { font-weight: 600; margin-bottom: 6px; }
-          .option { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-        `}</style>
+        <h4>Raw Form HTML (current)</h4>
+        <pre className="raw">{code}</pre>
       </div>
     </div>
   );
