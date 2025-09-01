@@ -1,39 +1,74 @@
-/* App.css - updated to match updated App.jsx (option-row, remove buttons, etc.) */
+/* App.css - subtle lively theme, kept restrained, full-height layout */
+
+:root{
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --muted: #94a3b8;
+  --text: #0f172a;
+  --accent: #3b82f6;
+  --accent-2: #0ea5a3;
+  --danger: #ef4444;
+  --soft: rgba(15,23,42,0.04);
+  --glass: rgba(255,255,255,0.7);
+}
+
+* { box-sizing: border-box; }
+
+html,body,#root {
+  height: 100%;
+}
 
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* full-viewport split layout */
 .container {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
   gap: 1.5rem;
-  height: 100vh;
+  height: 100vh; /* full height */
   padding: 1rem;
-  box-sizing: border-box;
+  align-items: stretch;
+  overflow: hidden; /* let inner panes scroll */
 }
 
+/* card base */
 .left,
 .right {
-  background: #ffffff;
+  background: var(--card);
   border-radius: 1rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 30px rgba(2,6,23,0.06);
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
+  overflow: auto; /* allow scrolling inside each pane */
+  -webkit-overflow-scrolling: touch;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
+/* subtle hover lift for cards */
+.left:hover,
+.right:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 48px rgba(2,6,23,0.08);
+}
+
+/* headings */
 .left h3,
 .right h3 {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.75rem 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* Editor on left */
@@ -43,65 +78,93 @@ body {
   width: 100%;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.9rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e6edf3;
   border-radius: 0.75rem;
   padding: 0.75rem;
   line-height: 1.5;
-  background: #f9fafb;
+  background: linear-gradient(180deg, #fbfdff, #f9fafb);
   outline: none;
-  transition: border 0.2s ease, background 0.15s ease;
-  box-sizing: border-box;
+  transition: border 0.2s ease, background 0.15s ease, box-shadow 0.12s ease;
+  color: #031026;
+  min-height: 220px;
+  max-height: calc(100vh - 220px);
+  overflow: auto;
 }
 
+/* focus */
 .editor:focus {
-  border-color: #3b82f6;
+  border-color: var(--accent);
   background: #ffffff;
+  box-shadow: 0 6px 18px rgba(59,130,246,0.06);
 }
 
 /* Question blocks */
 .question-block {
-  background: #f9fafb;
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg,#ffffff,#fcfeff);
+  border: 1px solid #eef3f7;
   border-radius: 0.75rem;
   padding: 1rem;
   margin-bottom: 1rem;
   box-sizing: border-box;
+  transition: transform 120ms ease;
 }
 
+/* small bounce on hover */
+.question-block:hover {
+  transform: translateY(-4px);
+}
+
+/* row layout */
 .q-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.75rem;
-  gap: 0.75rem;
 }
 
+.q-row .left-col {
+  display:flex;
+  gap: 8px;
+  align-items:center;
+}
+
+/* question index chip */
+.index-chip {
+  font-size: 12px; color: var(--muted);
+  min-width: 28px;
+  text-align: center;
+  background: #f1f5f9;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+/* question input */
 .question-input {
   flex: 1;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e6eef5;
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   font-size: 1rem;
   outline: none;
   margin-right: 0.75rem;
-  transition: border 0.2s ease, background 0.15s ease;
+  transition: border 0.18s ease, background 0.12s ease;
+  background: #fff;
 }
 
 .question-input:focus {
-  border-color: #3b82f6;
-  background: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 6px 16px rgba(59,130,246,0.06);
 }
 
 /* Type switch */
 .type-switch {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .type-switch label {
   font-size: 0.9rem;
-  margin-right: 0.5rem;
   cursor: pointer;
   color: #475569;
   display: inline-flex;
@@ -114,9 +177,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-top: 8px;
 }
 
-/* Each option row now wraps label + remove button */
+/* Each option row wraps label + remove button */
 .option-row {
   display: flex;
   align-items: center;
@@ -124,13 +188,13 @@ body {
   margin-bottom: 6px;
 }
 
-/* Label container for the option inputs */
+/* label container for the option inputs */
 .option {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #eef3f7;
   border-radius: 0.5rem;
   padding: 0.5rem;
   box-sizing: border-box;
@@ -140,18 +204,19 @@ body {
 /* the text input for option editing */
 .option-input {
   flex: 1;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e6eef5;
   border-radius: 0.5rem;
   padding: 0.4rem 0.6rem;
   font-size: 0.95rem;
   outline: none;
   transition: border 0.2s ease, background 0.12s ease;
   box-sizing: border-box;
+  background: #fff;
 }
 
 .option-input:focus {
-  border-color: #3b82f6;
-  background: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 6px 12px rgba(59,130,246,0.04);
 }
 
 /* radio/checkbox shown inside option label */
@@ -163,12 +228,6 @@ body {
   flex: 0 0 16px;
 }
 
-/* If input is readOnly (we set readOnly for the visual choice input),
-   keep it subtle and not interactive */
-.option input[readonly] {
-  pointer-events: none;
-}
-
 /* Buttons: primary (add/submit) and small secondary (remove) */
 .q-actions,
 .form-actions {
@@ -177,7 +236,7 @@ body {
 
 .q-actions button,
 .form-actions button {
-  background: #3b82f6;
+  background: var(--accent);
   border: none;
   color: white;
   font-weight: 500;
@@ -192,14 +251,15 @@ body {
 .q-actions button:hover,
 .form-actions button:hover {
   background: #2563eb;
+  transform: translateY(-2px);
 }
 
-/* Remove buttons (smaller, subtle red) */
+/* Remove buttons (smaller) */
 .remove-option-btn,
 .remove-question-btn {
   background: transparent;
-  color: #ef4444;
-  border: 1px solid rgba(239,68,68,0.12);
+  color: var(--danger);
+  border: 1px solid rgba(239,68,68,0.08);
   padding: 0.35rem 0.6rem;
   border-radius: 0.375rem;
   cursor: pointer;
@@ -217,14 +277,16 @@ body {
 
 /* Distinguish remove-question visually slightly */
 .remove-question-btn {
-  border-color: rgba(239,68,68,0.14);
+  border-color: rgba(239,68,68,0.12);
 }
 
-/* small layout tweaks for q-actions area when both add + remove exist */
-.q-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+/* logic note style */
+.logic-inline {
+  margin-top: 8px;
+  padding: 8px;
+  background: linear-gradient(180deg,#f8fafd,#fbfeff);
+  border-radius: 8px;
+  border: 1px solid #eef6f6;
 }
 
 /* form actions row */
@@ -235,19 +297,26 @@ body {
   margin-top: 1rem;
 }
 
-/* Raw output style */
-.raw {
-  background: #0f172a;
-  color: #f1f5f9;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  border-radius: 0.75rem;
-  padding: 0.75rem;
-  margin-top: 1rem;
-  overflow-x: auto;
-  max-height: 200px;
-  box-sizing: border-box;
-  white-space: pre-wrap;
+/* modal overlay for confirmation */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2,6,23,0.28);
+  z-index: 1200;
+  padding: 16px;
+}
+
+.modal {
+  width: 520px;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 12px 48px rgba(2,6,23,0.18);
+  border: 1px solid #eef3f7;
 }
 
 /* tiny helpers */
