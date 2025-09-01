@@ -30,11 +30,20 @@ export default function App() {
         const labels = qNode.querySelectorAll("label");
         const options = Array.from(labels).map((label) => {
           const input = label.querySelector("input");
-          // Set text same as value
-          return input?.getAttribute("value") ?? label.textContent.trim();
+          // prefer input value, fallback to label text
+          const raw = input?.getAttribute("value");
+          if (raw !== undefined && raw !== null) return raw;
+          // build the label text by concatenating text nodes after the input
+          let labelText = "";
+          Array.from(label.childNodes).forEach((node) => {
+            if (node.nodeType === Node.TEXT_NODE) {
+              labelText += node.textContent;
+            }
+          });
+          return labelText.trim();
         });
 
-        const firstInput = qNode.querySelector("input");
+        const firstInput = qNode.querySelector("input[type=radio], input[type=checkbox]");
         const type = firstInput?.getAttribute("type") === "checkbox" ? "checkbox" : "radio";
 
         return { type, text, options };
@@ -52,6 +61,21 @@ export default function App() {
     if (!form) return "<form></form>";
     const serializer = new XMLSerializer();
     return serializer.serializeToString(form);
+  };
+
+  // Normalize names after any mutation, so q indices stay consistent
+  const normalizeNames = (doc) => {
+    const form = doc.querySelector("form");
+    if (!form) return;
+    const qNodes = form.querySelectorAll(".question");
+    qNodes.forEach((qNode, qi) => {
+      const inputs = qNode.querySelectorAll("input[type=radio], input[type=checkbox]");
+      inputs.forEach((inp) => {
+        const type = inp.getAttribute("type");
+        if (type === "checkbox") inp.setAttribute("name", `q${qi}[]`);
+        else inp.setAttribute("name", `q${qi}`);
+      });
+    });
   };
 
   useEffect(() => {
@@ -72,6 +96,8 @@ export default function App() {
     const qNode = qNodes[qIndex];
     if (!qNode) return;
     mutateFn(qNode, doc, qIndex);
+    // normalize names (re-index) after any mutation
+    normalizeNames(doc);
     const newCode = formFromDocToCode(doc);
     setCode(newCode);
     setQuestions(parseCodeToQuestions(newCode));
@@ -86,9 +112,7 @@ export default function App() {
       }
       p.textContent = newText;
 
-      // Also update first input value to match question text if desired
-      const firstInput = qNode.querySelector("input");
-      if (firstInput) firstInput.setAttribute("value", newText);
+      // NOTE: removed updating first input value — question and options are independent
     });
   };
 
@@ -100,17 +124,50 @@ export default function App() {
       const input = label.querySelector("input");
       if (input) input.setAttribute("value", newText);
 
-      // Remove old label text and append newText
-      while (label.childNodes.length > 1) label.removeChild(label.lastChild);
+      // Remove all text nodes and any nodes after the input, then append new text node
+      if (input) {
+        let node = input.nextSibling;
+        while (node) {
+          const next = node.nextSibling;
+          label.removeChild(node);
+          node = next;
+        }
+      } else {
+        // fallback: remove trailing children that are text nodes
+        Array.from(label.childNodes).forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            label.removeChild(node);
+          }
+        });
+      }
+
       label.appendChild(doc.createTextNode(newText));
+    });
+  };
+
+  // remove a single option label by index
+  const handleRemoveOption = (qIndex, optionIndex) => {
+    mutateQuestionInCode(qIndex, (qNode, doc) => {
+      const labels = qNode.querySelectorAll("label");
+      if (!labels[optionIndex]) return;
+      const label = labels[optionIndex];
+      qNode.removeChild(label);
+
+      // clean up extra whitespace text nodes if present
+      Array.from(qNode.childNodes).forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() === "") {
+          qNode.removeChild(node);
+        }
+      });
     });
   };
 
   const handleAddOption = (qIndex) => {
     mutateQuestionInCode(qIndex, (qNode, doc) => {
-      const existingInputs = qNode.querySelectorAll("input");
+      // count only actual choice inputs (radio/checkbox)
+      const existingInputs = qNode.querySelectorAll("input[type=radio], input[type=checkbox]");
       const optionCount = existingInputs.length;
-      const firstInput = qNode.querySelector("input");
+      const firstInput = qNode.querySelector("input[type=radio], input[type=checkbox]");
       const type = firstInput?.getAttribute("type") || "radio";
       const nameAttr = type === "checkbox" ? `q${qIndex}[]` : `q${qIndex}`;
       const label = doc.createElement("label");
@@ -119,7 +176,7 @@ export default function App() {
       input.setAttribute("name", nameAttr);
       input.setAttribute("value", `Option ${optionCount + 1}`);
       label.appendChild(input);
-      label.appendChild(doc.createTextNode(`Option ${optionCount + 1}`));
+      label.appendChild(doc.createTextNode(` Option ${optionCount + 1}`));
       qNode.appendChild(doc.createTextNode("\n    "));
       qNode.appendChild(label);
     });
@@ -144,11 +201,40 @@ export default function App() {
     input.setAttribute("name", `q${newIndex}`);
     input.setAttribute("value", "Option 1");
     label.appendChild(input);
-    label.appendChild(doc.createTextNode("Option 1"));
+    label.appendChild(doc.createTextNode(" Option 1"));
     qDiv.appendChild(label);
     form.appendChild(doc.createTextNode("\n  "));
     form.appendChild(qDiv);
     form.appendChild(doc.createTextNode("\n"));
+
+    // normalize names for the whole doc after adding
+    normalizeNames(doc);
+
+    const newCode = formFromDocToCode(doc);
+    setCode(newCode);
+    setQuestions(parseCodeToQuestions(newCode));
+  };
+
+  const handleRemoveQuestion = (qIndex) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(code, "text/html");
+    const form = doc.querySelector("form");
+    if (!form) return;
+    const qNodes = form.querySelectorAll(".question");
+    const qNode = qNodes[qIndex];
+    if (!qNode) return;
+    form.removeChild(qNode);
+
+    // cleanup stray whitespace text nodes
+    Array.from(form.childNodes).forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() === "") {
+        form.removeChild(node);
+      }
+    });
+
+    // normalize names after removal
+    normalizeNames(doc);
+
     const newCode = formFromDocToCode(doc);
     setCode(newCode);
     setQuestions(parseCodeToQuestions(newCode));
@@ -156,11 +242,10 @@ export default function App() {
 
   const handleToggleType = (qIndex, newType) => {
     mutateQuestionInCode(qIndex, (qNode) => {
-      const inputs = qNode.querySelectorAll("input");
+      const inputs = qNode.querySelectorAll("input[type=radio], input[type=checkbox]");
       inputs.forEach((inp) => {
         inp.setAttribute("type", newType);
-        if (newType === "checkbox") inp.setAttribute("name", `q${qIndex}[]`);
-        else inp.setAttribute("name", `q${qIndex}`);
+        // name normalization happens after mutation
       });
     });
   };
@@ -168,15 +253,30 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const payload = {};
-    questions.forEach((q, qi) => {
+
+    // Build payload in mongoose schema format
+    const formPayload = questions.map((q, qi) => {
       const key = `q${qi}`;
-      if (q.type === "radio") payload[q.text] = fd.get(key) || null;
-      else payload[q.text] = fd.getAll(key + "[]");
+      const ans =
+        q.type === "radio"
+          ? fd.get(key)
+          : fd.getAll(key + "[]");
+
+      return {
+        question: q.text,
+        answer: Array.isArray(ans) ? ans : [ans].filter(Boolean), // always array
+        type: q.type,
+        options: q.options
+      };
     });
+
+    const payload = { form: formPayload };
+
     console.log("Submitting:", payload);
+
     try {
-      const res = await fetch("http://localhost:5000/submit", {
+      // NOTE: endpoint aligned to backend structure
+      const res = await fetch("http://localhost:5000/api/forms/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -244,41 +344,56 @@ export default function App() {
 
               <div className="options">
                 {q.options.map((opt, oi) => (
-                  <label className="option" key={oi}>
-                    <input
-                      type={q.type}
-                      name={q.type === "checkbox" ? `q${qi}[]` : `q${qi}`}
-                      value={opt}
-                    />
-                    <input
-                      className="option-input"
-                      value={opt}
-                      onChange={(e) =>
-                        handlePreviewOptionTextChange(qi, oi, e.target.value)
-                      }
-                    />
-                  </label>
+                  <div className="option-row" key={oi} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                    <label className="option" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <input
+                        type={q.type}
+                        name={q.type === "checkbox" ? `q${qi}[]` : `q${qi}`}
+                        value={opt}
+                        readOnly
+                      />
+                      <input
+                        className="option-input"
+                        value={opt}
+                        onChange={(e) =>
+                          handlePreviewOptionTextChange(qi, oi, e.target.value)
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(qi, oi)}
+                      title="Remove this option"
+                    >
+                      Remove option
+                    </button>
+                  </div>
                 ))}
               </div>
 
-              <div className="q-actions">
+              <div className="q-actions" style={{ marginTop: "8px" }}>
                 <button type="button" onClick={() => handleAddOption(qi)}>
                   + Add Option
+                </button>
+                {" "}
+                <button type="button" onClick={() => handleRemoveQuestion(qi)} style={{ marginLeft: "8px" }}>
+                  Remove Question
                 </button>
               </div>
             </div>
           ))}
 
-          <div className="form-actions">
+          <div className="form-actions" style={{ marginTop: "16px" }}>
             <button type="button" onClick={handleAddQuestion}>
               + Add Question
             </button>
+            {" "}
             <button type="submit">Submit</button>
           </div>
         </form>
 
         <h4>Raw Form HTML (current)</h4>
-        <pre className="raw">{code}</pre>
+        <pre className="raw" style={{ whiteSpace: "pre-wrap" }}>{code}</pre>
       </div>
     </div>
   );
