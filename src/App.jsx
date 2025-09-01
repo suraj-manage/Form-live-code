@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+  import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 export default function App() {
@@ -237,6 +237,21 @@ export default function App() {
       label.appendChild(doc.createTextNode(` Option ${optionCount + 1}`));
       qNode.appendChild(doc.createTextNode("\n    "));
       qNode.appendChild(label);
+    });
+  };
+  const handleRemoveOption = (qIndex, optionIndex) => {
+    mutateQuestionInCode(qIndex, (qNode, doc) => {
+      const labels = Array.from(qNode.querySelectorAll("label"));
+      if (!labels[optionIndex]) return;
+
+      // remove the selected label
+      qNode.removeChild(labels[optionIndex]);
+
+      // optional: re-add newline/indentation for remaining labels
+      Array.from(qNode.querySelectorAll("label")).forEach(lbl => {
+        qNode.insertBefore(doc.createTextNode("\n    "), lbl);
+      });
+      qNode.appendChild(doc.createTextNode("\n  "));
     });
   };
 
