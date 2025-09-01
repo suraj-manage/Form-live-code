@@ -1,4 +1,4 @@
-/* App.css - updated to match updated App.jsx (option-row, remove buttons, etc.) */
+/* App.css - upgraded to match updated App.jsx (option-row, remove buttons, modern look) */
 
 body {
   margin: 0;
@@ -29,14 +29,13 @@ body {
 
 .left h3,
 .right h3 {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.75rem 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: #0f172a;
 }
 
-/* Editor on left */
+/* Editor styling */
 .editor {
   flex: 1;
   resize: none;
@@ -92,7 +91,7 @@ body {
   background: #ffffff;
 }
 
-/* Type switch */
+/* Type switch styling */
 .type-switch {
   display: flex;
   align-items: center;
@@ -101,7 +100,6 @@ body {
 
 .type-switch label {
   font-size: 0.9rem;
-  margin-right: 0.5rem;
   cursor: pointer;
   color: #475569;
   display: inline-flex;
@@ -109,22 +107,22 @@ body {
   gap: 0.35rem;
 }
 
-/* Options list */
+/* Options container */
 .options {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-/* Each option row now wraps label + remove button */
+/* Option row: label + remove button */
 .option-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   margin-bottom: 6px;
 }
 
-/* Label container for the option inputs */
+/* Option input styling */
 .option {
   display: flex;
   align-items: center;
@@ -133,11 +131,10 @@ body {
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
   padding: 0.5rem;
-  box-sizing: border-box;
   flex: 1;
+  box-sizing: border-box;
 }
 
-/* the text input for option editing */
 .option-input {
   flex: 1;
   border: 1px solid #cbd5e1;
@@ -146,7 +143,6 @@ body {
   font-size: 0.95rem;
   outline: none;
   transition: border 0.2s ease, background 0.12s ease;
-  box-sizing: border-box;
 }
 
 .option-input:focus {
@@ -154,7 +150,7 @@ body {
   background: #ffffff;
 }
 
-/* radio/checkbox shown inside option label */
+/* Radio/checkbox inside option label */
 .option input[type="radio"],
 .option input[type="checkbox"] {
   margin: 0;
@@ -163,30 +159,31 @@ body {
   flex: 0 0 16px;
 }
 
-/* If input is readOnly (we set readOnly for the visual choice input),
-   keep it subtle and not interactive */
+/* Readonly inputs should not interfere */
 .option input[readonly] {
   pointer-events: none;
+  opacity: 0.85;
 }
 
-/* Buttons: primary (add/submit) and small secondary (remove) */
+/* Buttons: primary and remove */
 .q-actions,
 .form-actions {
-  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
 .q-actions button,
 .form-actions button {
   background: #3b82f6;
   border: none;
-  color: white;
+  color: #ffffff;
   font-weight: 500;
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
-  margin-right: 0.5rem;
   transition: background 0.2s ease, transform 0.02s ease;
-  box-sizing: border-box;
 }
 
 .q-actions button:hover,
@@ -194,48 +191,31 @@ body {
   background: #2563eb;
 }
 
-/* Remove buttons (smaller, subtle red) */
+/* Remove buttons: subtle red */
 .remove-option-btn,
 .remove-question-btn {
   background: transparent;
   color: #ef4444;
-  border: 1px solid rgba(239,68,68,0.12);
+  border: 1px solid rgba(239, 68, 68, 0.12);
   padding: 0.35rem 0.6rem;
   border-radius: 0.375rem;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.86rem;
-  transition: background 0.12s ease, color 0.12s ease, transform 0.02s ease;
-  box-sizing: border-box;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .remove-option-btn:hover,
 .remove-question-btn:hover {
-  background: rgba(239,68,68,0.06);
+  background: rgba(239, 68, 68, 0.06);
   color: #dc2626;
 }
 
-/* Distinguish remove-question visually slightly */
 .remove-question-btn {
-  border-color: rgba(239,68,68,0.14);
+  border-color: rgba(239, 68, 68, 0.14);
 }
 
-/* small layout tweaks for q-actions area when both add + remove exist */
-.q-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-/* form actions row */
-.form-actions {
-  display: flex;
-  justify-content: flex-start;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-/* Raw output style */
+/* Raw code preview */
 .raw {
   background: #0f172a;
   color: #f1f5f9;
@@ -246,11 +226,10 @@ body {
   margin-top: 1rem;
   overflow-x: auto;
   max-height: 200px;
-  box-sizing: border-box;
   white-space: pre-wrap;
 }
 
-/* tiny helpers */
+/* Helpers */
 .center {
   display: flex;
   align-items: center;
@@ -274,7 +253,8 @@ body {
     margin-bottom: 0.5rem;
   }
 
-  .q-actions {
+  .q-actions,
+  .form-actions {
     flex-wrap: wrap;
   }
 }
