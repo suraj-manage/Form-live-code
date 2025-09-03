@@ -8,6 +8,7 @@ import {
   buildHtmlFromPayload,
   replacePayloadInPython,
   replacePayloadInVBScript,
+  extractJsonFromJavaScript,
   buildPayloadObject,
   normalizePayloadFormToQuestions,
 } from "./utils/formHelpers";
@@ -19,6 +20,7 @@ import {
   - question text edits in preview are stored in `editingDrafts` while typing
   - logic confirmation popup appears only on blur if the question had logic and text changed
   - console.log bodies that are sent to backend (save & submit)
+  - small UX: Esc closes code overlay; overlay textarea auto-focuses
 */
 
 export default function App() {
@@ -32,11 +34,13 @@ export default function App() {
 </form>`;
 
   // state
+  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
   const [questions, setQuestions] = useState([]);
-  const [viewLang, setViewLang] = useState("html"); // html | python | vbscript
-  const [codeCache, setCodeCache] = useState({ html: initialHtml, python: "", vbscript: "" });
+  const [viewLang, setViewLang] = useState("html"); // html | python | vbscript | javascript
+  const [codeCache, setCodeCache] = useState({ html: initialHtml, python: "", vbscript: "", javascript: "" });
   const [leftText, setLeftText] = useState(initialHtml);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showCode, setShowCode] = useState(false);
 
   const [endUserMode, setEndUserMode] = useState(false);
   const [responses, setResponses] = useState({});
@@ -55,6 +59,9 @@ export default function App() {
   const viewSwitchRef = useRef(false);
   const codeCacheRef = useRef(codeCache);
   useEffect(() => { codeCacheRef.current = codeCache; }, [codeCache]);
+
+  // ref for focusing the code textarea
+  const codeTextareaRef = useRef(null);
 
   // helper to set codeCache + keep ref synced
   function setCodeCacheAndRef(next) {
@@ -129,9 +136,9 @@ export default function App() {
     });
     const pythonCode = generateCodeForLanguage("python", initialQuestions, htmlCode);
     const vbCode = generateCodeForLanguage("vbscript", initialQuestions, htmlCode);
-
+    const jsCode = generateCodeForLanguage("javascript", initialQuestions, htmlCode);
     programmaticChangeRef.current = true;
-    setCodeCacheAndRef({ html: htmlCode, python: pythonCode, vbscript: vbCode });
+    setCodeCacheAndRef({ html: htmlCode, python: pythonCode, vbscript: vbCode, javascript: jsCode });
     setLeftText(htmlCode);
     setVisibleSet(new Set(initialQuestions.map((_, i) => i)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -195,7 +202,8 @@ export default function App() {
         } catch (err) {
           error = "Invalid HTML. Please fix the form HTML.";
         }
-      } else if (viewLang === "python") {
+      } 
+      else if (viewLang === "python") {
         const block = extractJsonFromPython(leftText);
         if (block && block.jsonText) {
           try {
@@ -227,7 +235,24 @@ export default function App() {
         } else {
           error = "";
         }
+      } else if (viewLang === "javascript") {
+        const block = extractJsonFromJavaScript(leftText);
+        if (block && block.jsonText) {
+          try {
+            const payload = JSON.parse(block.jsonText);
+            if (!payload || !Array.isArray(payload.form)) {
+              error = "JavaScript payload must contain a 'form' array.";
+            } else {
+              newQuestions = normalizePayloadFormToQuestions(payload.form);
+            }
+          } catch (err) {
+            error = "Invalid JSON in JavaScript payload. Please fix and try again.";
+          }
+        } else {
+          error = "";
+        }
       }
+
 
       setErrorMsg(error);
 
@@ -312,9 +337,6 @@ export default function App() {
   // -------------------------
   // NOTE: question text typing ONLY updates editingDrafts — commit on blur
   // -------------------------
-// Preview (editor) handlers
-// -------------------------
-
   const handleQuestionTextChange = (qIndex, newText) => {
     setEditingDrafts((prev) => ({ ...prev, [qIndex]: newText }));
   };
@@ -474,7 +496,7 @@ export default function App() {
       // console what we're about to send
       console.log("Saving form payload to /api/forms ->", body);
 
-      const res = await fetch("/api/forms", {
+      const res = await fetch(`${API_BASE}/api/forms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -522,10 +544,9 @@ export default function App() {
     }).filter(Boolean);
   }
 
-  async function handleSubmitEndUserForm(e) {
-    e.preventDefault();
+  async function handleSubmitEndUserForm(formResponse) {
     try {
-      const answers = buildAnswers(questions, responses);
+      const answers = formResponse.answers;
       const evaluatedQuotas = evaluateQuotas(questions, responses);
       const formSnapshot = buildPayloadObject(questions).form;
 
@@ -537,10 +558,9 @@ export default function App() {
         meta: {},
       };
 
-      // console what we're sending
-      console.log("Submitting form response to /api/forms/submit ->", body);
+      console.log("Submitting form response ->", body);
 
-      const res = await fetch("/api/forms/submit", {
+      const res = await fetch(`${API_BASE}/api/forms/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -549,6 +569,7 @@ export default function App() {
       if (!res.ok) throw new Error(`Submit failed: ${res.statusText}`);
       const data = await res.json();
       alert("Thanks — response submitted. id: " + (data._id || data.id || "unknown"));
+
       setEndUserMode(false);
       setResponses({});
       setVisibleSet(new Set(questions.map((_, i) => i)));
@@ -592,86 +613,151 @@ export default function App() {
   };
 
   // -------------------------
+  // UX: Esc to close overlay & autofocus textarea when open
+  // -------------------------
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape" || e.key === "Esc") {
+        if (showCode) setShowCode(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showCode]);
+
+  useEffect(() => {
+    // small delay so animation completes before focusing
+    if (showCode) {
+      const t = setTimeout(() => {
+        try { codeTextareaRef.current?.focus(); }
+        catch (err) { /* ignore */ }
+      }, 180);
+      return () => clearTimeout(t);
+    }
+  }, [showCode]);
+
+  // -------------------------
   // Render
   // -------------------------
   return (
-    <div className="container">
-      <div className="left">
-        <h3>Form Code (editable)</h3>
-
-        <div style={{ marginBottom: 8, display: "flex", gap: 8, alignItems: "center" }}>
-          <label htmlFor="lang-select" style={{ fontSize: 13, color: "#475569" }}>Show as:</label>
-          <select id="lang-select" value={viewLang} onChange={(e) => setViewLang(e.target.value)} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
-            <option value="html">HTML (raw)</option>
-            <option value="python">Python</option>
-            <option value="vbscript">VBScript</option>
-          </select>
-          <div className="lang-indicator" style={{ marginLeft: "auto", fontSize: 13, color: "#94a3b8" }}>Editable ({viewLang})</div>
-        </div>
-
-        <textarea className={`editor ${errorMsg ? "invalid" : ""}`} value={leftText} onChange={handleTextareaChange} spellCheck="false" />
-
-        {errorMsg && <div className="error-banner">{errorMsg}</div>}
+    <div className="container app-root" data-overlay-open={showCode}>
+      {/* Button to toggle code overlay */}
+      <div className="top-controls" style={{ width: "100%" }}>
+        <button className="btn-show-code" type="button" onClick={() => setShowCode(true)}>
+          <span className="btn-icon">💻</span> Show Code
+        </button>
       </div>
 
-      <div className="right">
-        {pendingTextChange ? (
-          <div className="modal-overlay">
-            <div className="modal">
-              <h4>Question text changed</h4>
-              <p>You changed text for question #{pendingTextChange.qIndex + 1}. This question has logic rules attached.</p>
-              <p>What do you want to do with the logic for this question?</p>
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button onClick={keepLogicAndClose}>Keep logic & Apply text</button>
-                <button onClick={clearLogicForQuestion} style={{ background: "transparent", color: "#ef4444", border: "1px solid rgba(239,68,68,0.12)" }}>
-                  Clear logic & Apply
-                </button>
-                <button onClick={cancelTextChangeAndRevert} style={{ marginLeft: "auto" }}>
-                  Cancel (revert text)
-                </button>
+      {/* Code overlay (floating) */}
+      {showCode && (
+        <div className="code-float-overlay" role="dialog" aria-modal="true" aria-label="Code editor overlay">
+          <div className="code-card">
+            <div className="card-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3>Form Code (editable)</h3>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <select
+                  id="lang-select"
+                  value={viewLang}
+                  onChange={(e) => setViewLang(e.target.value)}
+                  style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.04)" }}
+                >
+                  <option value="html" style={{ color: "violet" }}>HTML (raw)</option>
+                  <option value="python" style={{ color: "blue" }}>Python</option>
+                  <option value="vbscript" style={{ color: "green" }}>VBScript</option>
+                  <option value="javascript" style={{ color: "yellow" }}>JavaScript (Node.js)</option>
+                </select>
+                <div className="lang-ind" style={{ marginLeft: 8, fontSize: 13 }}>Editable ({viewLang})</div>
+                <button className="btn-close-code" type="button" onClick={() => setShowCode(false)}>Close</button>
               </div>
             </div>
-          </div>
-        ) : null}
 
-
-        {!endUserMode ? (
-          <>
-            <h3>Preview / Editor</h3>
-            <EditorForm
-              questions={questions}
-              openLogicEditor={openLogicEditor}
-              openQuotaEditor={openQuotaEditor}
-              editingDrafts={editingDrafts}
-              onQuestionTextChange={handleQuestionTextChange}
-              onQuestionTextBlur={handleQuestionTextBlur}
-              onOptionTextChange={handleOptionTextChange}
-              onAddOption={handleAddOption}
-              onRemoveOption={handleRemoveOption}
-              onRemoveQuestion={handleRemoveQuestion}
-              onToggleType={handleToggleType}
-              onToggleLogicEditor={handleToggleLogicEditor}
-              onToggleQuotaEditor={handleToggleQuotaEditor}
-              saveLogicForOption={saveLogicForOption}
-              removeLogicForOption={removeLogicForOption}
-              saveQuotaForQuestion={saveQuotaForQuestion}
-              removeQuotaForQuestion={removeQuotaForQuestion}
-              setOpenLogicEditor={setOpenLogicEditor}
-              setOpenQuotaEditor={setOpenQuotaEditor}
-              onAddQuestion={handleAddQuestion}
-              onSaveDefinition={handleSaveDefinition}
-              onPreviewEndUserForm={handlePreviewEndUserForm}
+            <textarea
+              ref={codeTextareaRef}
+              className={`editor ${errorMsg ? "invalid" : ""}`}
+              value={leftText}
+              onChange={handleTextareaChange}
+              spellCheck="false"
             />
-          </>
-        ) : (
-          <>
-            <h3>End-User Form</h3>
-            <EndUserForm questions={questions} responses={responses} visibleSet={visibleSet} onEndUserChange={handleEndUserChange} onSubmit={handleSubmitEndUserForm} />
-            <div style={{ marginTop: 16 }}>
-              <button type="button" onClick={() => setEndUserMode(false)}>Back to Editor</button>
+
+            {errorMsg && <div className="error-banner">{errorMsg}</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Form area centered (preview is primary, flat) */}
+      <div className="preview-root">
+        <div className="preview-card">
+          {pendingTextChange ? (
+            <div className="modal-overlay">
+              <div className="modal">
+                <h4>Question text changed</h4>
+                <p>You changed text for question #{pendingTextChange.qIndex + 1}. This question has logic rules attached.</p>
+                <p>What do you want to do with the logic for this question?</p>
+                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  <button onClick={keepLogicAndClose}>Keep logic & Apply text</button>
+                  <button onClick={clearLogicForQuestion} style={{ background: "transparent", color: "#ef4444", border: "1px solid rgba(239,68,68,0.12)" }}>
+                    Clear logic & Apply
+                  </button>
+                  <button onClick={cancelTextChangeAndRevert} style={{ marginLeft: "auto" }}>
+                    Cancel (revert text)
+                  </button>
+                </div>
+              </div>
             </div>
-          </>
-        )}
+          ) : null}
+
+          {!endUserMode ? (
+            <>
+              {/* Form header — big title + subtitle (matches screenshot layout) */}
+              <div className="form-header">
+                <div className="form-title-row">
+                  <h1 className="form-title">T-Shirt Sign Up</h1>
+                </div>
+                <div className="form-divider" />
+                <p className="form-subtitle">Enter your name and size to sign up for a T-Shirt.</p>
+              </div>
+
+              <EditorForm
+                questions={questions}
+                openLogicEditor={openLogicEditor}
+                openQuotaEditor={openQuotaEditor}
+                editingDrafts={editingDrafts}
+                onQuestionTextChange={handleQuestionTextChange}
+                onQuestionTextBlur={handleQuestionTextBlur}
+                onOptionTextChange={handleOptionTextChange}
+                onAddOption={handleAddOption}
+                onRemoveOption={handleRemoveOption}
+                onRemoveQuestion={handleRemoveQuestion}
+                onToggleType={handleToggleType}
+                onToggleLogicEditor={handleToggleLogicEditor}
+                onToggleQuotaEditor={handleToggleQuotaEditor}
+                saveLogicForOption={saveLogicForOption}
+                removeLogicForOption={removeLogicForOption}
+                saveQuotaForQuestion={saveQuotaForQuestion}
+                removeQuotaForQuestion={removeQuotaForQuestion}
+                setOpenLogicEditor={setOpenLogicEditor}
+                setOpenQuotaEditor={setOpenQuotaEditor}
+                onAddQuestion={handleAddQuestion}
+                onSaveDefinition={handleSaveDefinition}
+                onPreviewEndUserForm={handlePreviewEndUserForm}
+              />
+            </>
+          ) : (
+            <>
+              <h3>End-User Form</h3>
+              <EndUserForm
+                questions={questions}
+                responses={responses}
+                visibleSet={visibleSet}
+                onEndUserChange={handleEndUserChange}
+                onSubmit={handleSubmitEndUserForm}
+              />
+              <div style={{ marginTop: 16 }}>
+                <button type="button" onClick={() => setEndUserMode(false)}>Back to Editor</button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

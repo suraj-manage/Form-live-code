@@ -19,14 +19,14 @@ export default function QuestionQuotaEditor({ questions, qIndex, initialQuota, o
   const handleRemove = () => onRemove(qIndex);
 
   return (
-    <div style={{ marginTop: 10, padding: 10, borderRadius: 8, border: "1px solid #e6edf3", background: "#ffffff" }}>
+    <div style={{ marginTop: 10, padding: 10, borderRadius: 8, border: "1px solid #e6edf3", background: "#ffffff", opacity:'80%' }}>
       <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>Quota for Question #{qIndex + 1}</div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
         <label style={{ fontSize: 13, color: "#334155" }}>Condition:</label>
-        <select value={condition} onChange={(e) => setCondition(e.target.value)} style={{ padding: "6px 8px", borderRadius: 6 }}>
-          <option value="=">=</option>
-          <option value="<">&lt;</option>
-          <option value=">">&gt;</option>
+        <select value={condition} onChange={(e) => setCondition(e.target.value)} style={{ padding: "6px 8px", borderRadius: 6, color:"#14453f" }}>
+          <option value="=" style={{color:"black"}}>=</option>
+          <option value="<" style={{color:"black"}}>&lt;</option>
+          <option value=">" style={{color:"black"}}>&gt;</option>
         </select>
         <input
           type="number"

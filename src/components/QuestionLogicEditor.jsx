@@ -25,13 +25,13 @@ export default function QuestionLogicEditor({ questions, qIndex, initialOption, 
       <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>Logic for Question #{qIndex + 1}</div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
         <label style={{ fontSize: 13, color: "#334155" }}>Option:</label>
-        <select value={selectedOption} onChange={(e) => setSelectedOption(e.target.value)} style={{ padding: "6px 8px", borderRadius: 6 }}>
-          {opts.map((o, i) => <option key={i} value={o}>{o}</option>)}
+        <select value={selectedOption} onChange={(e) => setSelectedOption(e.target.value)} style={{ padding: "6px 8px", borderRadius: 6,color:"#14453f" }}>
+          {opts.map((o, i) => <option key={i} value={o} style={{color:'black'}}>{o}</option>)}
         </select>
       </div>
       <div style={{ marginBottom: 8 }}>
         <div style={{ fontSize: 13, color: "#334155", marginBottom: 6 }}>Show questions (1-based, comma-separated):</div>
-        <input value={csv} onChange={(e) => setCsv(e.target.value)} placeholder="e.g. 2,4" style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0" }} />
+        <input value={csv} onChange={(e) => setCsv(e.target.value)} placeholder="e.g. 2,4" style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #e2e8f0" ,color:"black"}} />
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" onClick={handleSave}>Save</button>

@@ -68,7 +68,9 @@ export function buildPayloadObject(internalQuestions) {
 export function generateCodeForLanguage(lang, internalQuestions, html) {
   const payloadObj = buildPayloadObject(internalQuestions);
   const payloadStr = JSON.stringify(payloadObj, null, 2);
+
   if (lang === "html") return html || buildHtmlFromPayload(payloadObj);
+
   if (lang === "python") {
     return [
       "# Python requests example",
@@ -83,11 +85,8 @@ export function generateCodeForLanguage(lang, internalQuestions, html) {
       "",
     ].join("\n");
   }
+
   if (lang === "vbscript") {
-    // For VBScript we keep the payload as JSON string assigned to a variable.
-    // Use a simple multi-line assignment, but ensure quotes are doubled for VB string literal contexts.
-    // We'll provide a Set payload = { ... } like before to make extraction simple,
-    // but to avoid VB literal escaping issues we will keep JSON unquoted (VBScript won't parse it but it's a code sample).
     return [
       "' VBScript HTTP request example (payload shown as JSON block)",
       "Set objHTTP = CreateObject(\"WinHttp.WinHttpRequest.5.1\")",
@@ -100,8 +99,37 @@ export function generateCodeForLanguage(lang, internalQuestions, html) {
       "",
     ].join("\n");
   }
+
+  if (lang === "javascript") {
+    return [
+      "// JavaScript (Node.js) fetch example",
+      "import fetch from 'node-fetch';",
+      "",
+      'const url = "http://localhost:5000/api/forms/submit";',
+      "const payload = " + payloadStr + ";",
+      "",
+      "async function submitForm() {",
+      "  try {",
+      "    const resp = await fetch(url, {",
+      "      method: 'POST',",
+      "      headers: { 'Content-Type': 'application/json' },",
+      "      body: JSON.stringify(payload)",
+      "    });",
+      "    console.log(resp.status);",
+      "    console.log(await resp.text());",
+      "  } catch (err) {",
+      "    console.error('Error:', err);",
+      "  }",
+      "}",
+      "",
+      "submitForm();",
+      "",
+    ].join("\n");
+  }
+
   return "";
 }
+
 
 // Extract JSON payload block from Python code sample
 export function extractJsonFromPython(code) {
@@ -161,4 +189,21 @@ export function normalizePayloadFormToQuestions(formArray) {
 export function escapeHtml(str) {
   if (typeof str !== "string") return "";
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+export function extractJsonFromJavaScript(code) {
+  if (!code || typeof code !== "string") return null;
+  const regex = /const\s+payload\s*=\s*({[\s\S]*?});/m;
+  const match = code.match(regex);
+  return match ? match[1] : null;
+}
+
+export function replacePayloadInJavaScript(code, newJson) {
+  if (!code || typeof code !== "string") return code;
+  const regex = /(const\s+payload\s*=\s*)({[\s\S]*})(;?)/m;
+  if (regex.test(code)) {
+    return code.replace(regex, (_, prefix, _oldJson, suffix) => `${prefix}${newJson}${suffix || ";"}`);
+  } else {
+    return code + "\n\nconst payload = " + newJson + ";";
+  }
 }
