@@ -106,8 +106,8 @@ export function generateCodeForLanguage(lang, internalQuestions, html) {
 // Extract JSON payload block from Python code sample
 export function extractJsonFromPython(code) {
   if (!code || typeof code !== "string") return null;
-  // Look for "payload =" followed by an object block. Use greedy match to include nested objects.
-  const regex = /payload\s*=\s*({[\s\S]*})/m;
+  // Non-greedy match, stops at newline or end of file
+  const regex = /payload\s*=\s*({[\s\S]*?})\s*(?:\n|$)/m;
   const match = code.match(regex);
   return match ? match[1] : null;
 }
@@ -115,11 +115,11 @@ export function extractJsonFromPython(code) {
 // Extract JSON payload block from VBScript code sample
 export function extractJsonFromVBScript(code) {
   if (!code || typeof code !== "string") return null;
-  // Look for "Set payload = " followed by an object block.
-  const regex = /Set\s+payload\s*=\s*({[\s\S]*})/m;
+  const regex = /Set\s+payload\s*=\s*({[\s\S]*?})\s*(?:\n|$)/m;
   const match = code.match(regex);
   return match ? match[1] : null;
 }
+
 
 // Replace payload block in Python code with newJson (stringified JSON)
 export function replacePayloadInPython(code, newJson) {

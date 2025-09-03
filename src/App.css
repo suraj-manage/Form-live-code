@@ -1,254 +1,315 @@
 /* -------------------------
-   Claud-Tier Ultra Form Theme
-   Full-height split layout, comfy, formal, fully animated
+   Claud-Tier Ultra Form Theme  — Updated for App.jsx
 ------------------------- */
 
-:root {
+:root{
   --bg: #eff1f3;
   --bg-card: #ffffff;
   --bg-glass: rgba(255,255,255,0.85);
-  --text: #1e293b;
+  --text: #0f1724;
   --text-muted: #64748b;
   --accent: #3b82f6;
   --accent-hover: #2563eb;
   --accent-2: #0ea5a3;
   --danger: #ef4444;
-  --soft-shadow: rgba(0,0,0,0.06);
-  --shadow-md: rgba(0,0,0,0.15);
+  --soft-shadow: rgba(2,6,23,0.06);
+  --shadow-md: rgba(2,6,23,0.12);
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
-  --transition-fast: 0.12s ease;
-  --transition-normal: 0.25s ease;
-  --transition-slow: 0.45s ease;
+  --transition-fast: 120ms;
+  --transition-normal: 250ms;
+  --transition-slow: 450ms;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
 }
 
 /* -------------------------
    Base & Reset
 ------------------------- */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { height: 100%; font-family: 'Inter', sans-serif; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
-}
+*{ box-sizing: border-box; margin:0; padding:0; }
+html,body,#root{ height:100%; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+body { overflow: hidden; }
 
 /* -------------------------
    Layout
 ------------------------- */
-.container {
-  display: grid;
+.container{
+  display:grid;
   grid-template-columns: 1fr 1.3fr;
-  gap: 1.5rem;
+  gap: 1.25rem;
   height: 100vh;
   padding: 1rem;
-  overflow: hidden;
   align-items: stretch;
+  overflow: hidden;
 }
 
 /* -------------------------
-   Animated Cards
+   Cards
 ------------------------- */
-.left, .right {
-  background: var(--bg-card);
+.left, .right{
+  background: linear-gradient(180deg,var(--bg-card), var(--bg-glass));
   border-radius: var(--radius-xl);
   padding: 1rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
+  display:flex;
+  flex-direction:column;
+  overflow:auto;
   -webkit-overflow-scrolling: touch;
-  box-shadow: 0 6px 22px var(--soft-shadow);
+  box-shadow: 0 8px 28px var(--soft-shadow);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
-  animation: fadeInUp 0.6s ease forwards;
 }
-.left:hover, .right:hover {
-  transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 14px 38px var(--shadow-md);
-}
-
-/* -------------------------
-   Headings
-------------------------- */
-.left h3, .right h3 {
-  font-size: 1.35rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text);
-  animation: fadeInDown 0.6s ease forwards;
-}
-@keyframes fadeInDown {
-  0% { opacity: 0; transform: translateY(-15px); }
-  100% { opacity: 1; transform: translateY(0); }
+.left:hover, .right:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 20px 46px var(--shadow-md);
 }
 
 /* -------------------------
-   Editor
+   Header area and controls
 ------------------------- */
-.editor {
-  flex: 1;
-  width: 100%;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  border-radius: var(--radius-lg);
-  border: 1px solid #dce3ed;
-  background: linear-gradient(180deg,#fcfdff,#f8fafd);
-  padding: 0.75rem;
-  min-height: 220px;
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
-  outline: none;
+.left > h3, .right > h3{
+  font-size:1.25rem;
+  font-weight:600;
+  margin-bottom:0.8rem;
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  color:var(--text);
+}
+.controls-row{
+  display:flex;
+  gap:0.625rem;
+  align-items:center;
+  margin-bottom:0.75rem;
+}
+.controls-row label{ font-size:13px; color:var(--text-muted); }
+.controls-row select{
+  padding:6px 10px;
+  border-radius:8px;
+  border:1px solid #e6eef8;
+  background:#fcfdff;
   transition: all var(--transition-fast);
+  font-size:13px;
 }
-.editor:focus {
+.controls-row select:focus{ outline:none; border-color: var(--accent); box-shadow: 0 6px 18px rgba(59,130,246,0.08); }
+
+/* Optional: Add this class to the "Editable (lang)" div in App.jsx for styling */
+.lang-indicator{
+  margin-left:auto;
+  font-size:13px;
+  color:var(--text-muted);
+  background: linear-gradient(180deg,#ffffff,#fbfdff);
+  padding:6px 10px;
+  border-radius: 999px;
+  border:1px solid #eef5fb;
+  box-shadow: 0 6px 14px rgba(2,6,23,0.02);
+}
+
+/* tiny "typing" helper — toggle with a boolean in App.jsx if you want */
+.typing-indicator{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  background: linear-gradient(180deg,#fff7ed,#fffbf0);
+  color:#92400e;
+  border:1px solid rgba(245,158,11,0.08);
+  border-radius: 999px;
+  font-size:12px;
+  font-weight:600;
+}
+
+/* -------------------------
+   Editor textarea
+------------------------- */
+.editor{
+  flex:1;
+  width:100%;
+  font-family: var(--mono);
+  font-size:0.95rem;
+  line-height:1.55;
+  border-radius: var(--radius-lg);
+  border:1px solid #dcebf7;
+  background: linear-gradient(180deg,#fbfdff,#f7fbff);
+  padding:0.85rem;
+  min-height:220px;
+  max-height: calc(100vh - 220px);
+  resize: none;
+  overflow:auto;
+  outline:none;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+  caret-color: var(--accent);
+  color: var(--text);
+  white-space: pre;
+}
+
+/* Editor focus + subtle glow */
+.editor:focus{
   border-color: var(--accent);
-  box-shadow: 0 8px 20px rgba(59,130,246,0.15);
-  animation: glowInput 0.6s ease infinite alternate;
+  box-shadow: 0 10px 30px rgba(59,130,246,0.08);
 }
-@keyframes glowInput {
-  0% { box-shadow: 0 8px 20px rgba(59,130,246,0.1); }
-  100% { box-shadow: 0 8px 20px rgba(59,130,246,0.25); }
+
+/* If you want to mark an invalid JSON block visually, add the class `.invalid` from JS */
+.editor.invalid{
+  border-color: var(--danger);
+  box-shadow: 0 6px 20px rgba(239,68,68,0.06);
+}
+
+/* nice selection */
+.editor ::selection{ background: rgba(59,130,246,0.12); }
+
+/* custom scrollbar for editor & cards */
+.left::-webkit-scrollbar, .right::-webkit-scrollbar, .editor::-webkit-scrollbar{
+  height:10px; width:10px;
+}
+.left::-webkit-scrollbar-thumb, .right::-webkit-scrollbar-thumb, .editor::-webkit-scrollbar-thumb{
+  background: linear-gradient(180deg,#e6eefb,#d7e8fb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.left::-webkit-scrollbar-track, .right::-webkit-scrollbar-track, .editor::-webkit-scrollbar-track{
+  background: transparent;
 }
 
 /* -------------------------
    Question blocks
 ------------------------- */
-.question-block {
+.question-block{
   background: linear-gradient(180deg,#ffffff,#f9fcff);
-  border: 1px solid #e5edf5;
+  border:1px solid #e7f0f8;
   border-radius: var(--radius-lg);
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-sizing: border-box;
-  transition: all var(--transition-fast);
-  animation: fadeInUp 0.6s ease forwards;
+  padding:1rem;
+  margin-bottom:1rem;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
-.question-block:hover {
-  transform: translateY(-5px) scale(1.015);
-  box-shadow: 0 6px 20px var(--soft-shadow);
-}
+.question-block:hover{ transform: translateY(-6px); box-shadow: 0 12px 36px rgba(2,6,23,0.04); }
 
-/* -------------------------
-   Rows & chips
-------------------------- */
-.q-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
-.q-row .left-col { display:flex; gap: 8px; align-items:center; }
-
-.index-chip {
-  font-size: 12px;
-  color: var(--text-muted);
-  min-width: 28px; text-align: center;
-  background: #f1f5f9; padding: 6px 8px;
+/* rows & chips */
+.q-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:0.75rem; }
+.q-row .left-col{ display:flex; gap:8px; align-items:center; }
+.index-chip{
+  font-size:12px;
+  color:var(--text-muted);
+  min-width:28px; text-align:center;
+  background:#f1f5f9; padding:6px 8px;
   border-radius: var(--radius-md);
-  transition: transform var(--transition-fast);
 }
-.index-chip:hover { transform: scale(1.15); }
 
-/* -------------------------
-   Inputs
-------------------------- */
-.question-input, .option-input {
-  flex: 1;
-  border: 1px solid #dce3ed;
+/* inputs */
+.question-input, .option-input{
+  flex:1;
+  border:1px solid #dcebf7;
   border-radius: var(--radius-md);
-  padding: 0.5rem 0.75rem;
-  font-size: 1rem;
-  outline: none;
-  margin-right: 0.75rem;
-  background: #fff;
-  transition: all var(--transition-fast);
+  padding:0.5rem 0.75rem;
+  font-size:1rem;
+  outline:none;
+  background:#fff;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
-.question-input:focus, .option-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 6px 16px rgba(59,130,246,0.15);
-  animation: glowInput 0.7s ease infinite alternate;
+.question-input:focus, .option-input:focus{
+  border-color:var(--accent);
+  box-shadow: 0 8px 24px rgba(59,130,246,0.06);
 }
 
-/* -------------------------
-   Options
-------------------------- */
-.options { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 8px; }
-.option-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-
-.option {
-  display: flex; align-items: center; gap: 0.5rem;
-  background: #fff; border: 1px solid #e5edf5;
-  border-radius: var(--radius-md); padding: 0.5rem;
-  flex: 1; transition: all var(--transition-fast);
+/* options */
+.options{ display:flex; flex-direction:column; gap:0.5rem; margin-top:8px; }
+.option-row{ display:flex; align-items:center; gap:8px; }
+.option{
+  display:flex; align-items:center; gap:0.5rem; padding:0.5rem;
+  background:#fff; border:1px solid #e9f3fb; border-radius: var(--radius-md);
 }
-.option:hover { transform: translateX(2px) scale(1.015); box-shadow: 0 4px 14px var(--soft-shadow); }
 
-/* checkbox/radio */
-.option input[type="radio"], .option input[type="checkbox"] { width: 16px; height: 16px; }
+/* native-looking radio/checkbox but cleaned */
+.option input[type="radio"], .option input[type="checkbox"]{ width:16px; height:16px; accent-color: var(--accent); }
 
 /* -------------------------
    Buttons
 ------------------------- */
-.q-actions button, .form-actions button {
-  background: var(--accent); border: none; color: #fff;
-  font-weight: 500; border-radius: var(--radius-md);
-  padding: 0.5rem 1rem; cursor: pointer;
-  margin-right: 0.5rem;
-  transition: all var(--transition-fast);
-  animation: fadeInUp 0.6s ease forwards;
+.q-actions button, .form-actions button{
+  background: var(--accent);
+  border:none;
+  color:#fff;
+  font-weight:600;
+  border-radius: var(--radius-md);
+  padding:0.5rem 1rem;
+  cursor:pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
-.q-actions button:hover, .form-actions button:hover {
-  background: var(--accent-hover);
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 6px 20px var(--soft-shadow);
+.q-actions button:hover, .form-actions button:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(59,130,246,0.08);
+}
+.remove-option-btn, .remove-question-btn{
+  background:transparent; color:var(--danger);
+  border:1px solid rgba(239,68,68,0.08);
+  padding:0.35rem 0.6rem; border-radius: var(--radius-sm);
+  font-size:0.86rem; font-weight:700; cursor:pointer;
+}
+.remove-option-btn:hover, .remove-question-btn:hover{
+  background: rgba(239,68,68,0.06); color:#dc2626; transform: scale(1.05);
 }
 
-.remove-option-btn, .remove-question-btn {
-  background: transparent; color: var(--danger);
-  border: 1px solid rgba(239,68,68,0.1);
-  padding: 0.35rem 0.6rem; border-radius: var(--radius-sm);
-  font-size: 0.86rem; font-weight: 600;
-  cursor: pointer; transition: all var(--transition-fast);
+/* -------------------------
+   Error banner (matches App.jsx inline error style)
+------------------------- */
+.error-banner{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  padding:8px 12px;
+  background: linear-gradient(180deg,#fff6f6,#fff6f6);
+  border:1px solid rgba(239,68,68,0.12);
+  color: var(--danger);
+  border-radius: 10px;
+  font-weight:600;
+  box-shadow: 0 6px 18px rgba(239,68,68,0.03);
 }
-.remove-option-btn:hover, .remove-question-btn:hover {
-  background: rgba(239,68,68,0.15);
-  color: #dc2626;
-  transform: scale(1.08);
-}
+
+/* Also allow inline small error text */
+.small-error { color: var(--danger); font-size: 13px; margin-top:8px; }
 
 /* -------------------------
    Modal
 ------------------------- */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(2,6,23,0.25);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1200; padding: 16px;
-  animation: fadeIn 0.4s ease;
+.modal-overlay{
+  position: fixed; inset:0; background: rgba(2,6,23,0.25);
+  display:flex; align-items:center; justify-content:center; z-index:1200; padding:16px;
 }
-.modal {
-  width: 520px; max-width: 100%;
-  background: #fff; border-radius: var(--radius-xl); padding: 16px;
-  box-shadow: 0 12px 48px rgba(2,6,23,0.2);
-  border: 1px solid #e5edf5;
-  animation: slideIn 0.5s ease;
+.modal{
+  width:520px; max-width:100%; background:#fff; border-radius: var(--radius-xl); padding:16px;
+  box-shadow: 0 20px 60px rgba(2,6,23,0.12); border:1px solid #e7f0f8;
 }
-@keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
-@keyframes slideIn { from {transform: translateY(50px) scale(0.95); opacity:0;} to {transform: translateY(0) scale(1); opacity:1;} }
 
 /* -------------------------
-   Global animations
+   Tiny helpers & micro-UI
 ------------------------- */
-@keyframes fadeInUp { 0% { opacity:0; transform: translateY(12px); } 100% { opacity:1; transform: translateY(0); } }
+.kv { display:flex; gap:8px; align-items:center; }
+.hint { font-size:12px; color:var(--text-muted); }
+.badge { font-size:12px; padding:6px 8px; border-radius:999px; background:#f8fafc; border:1px solid #eef5fb; color:var(--text-muted); }
+
+/* -------------------------
+   Animations
+------------------------- */
+@keyframes fadeInUp{ 0%{ opacity:0; transform: translateY(12px); } 100%{ opacity:1; transform: translateY(0);} }
 
 /* -------------------------
    Responsive
 ------------------------- */
-@media (max-width: 900px) {
-  .container { grid-template-columns: 1fr; height: auto; }
-  .q-row { flex-direction: column; align-items: stretch; }
-  .question-input { margin-right: 0; margin-bottom: 0.5rem; }
-  .q-actions { flex-wrap: wrap; }
+@media (max-width:900px){
+  .container{ grid-template-columns:1fr; height:auto; padding:10px; }
+  .q-row{ flex-direction:column; align-items:stretch; gap:10px; }
+  .question-input{ margin-right:0; }
+  .editor{ max-height: 50vh; min-height: 160px; }
 }
+
+/* -------------------------
+   Dev notes (optional)
+   - For best “lang badge” styling, in App.jsx change:
+      <div style={{ marginLeft: "auto", ... }}>Editable ({viewLang})</div>
+     to:
+      <div className="lang-indicator">Editable ({viewLang})</div>
+   - To show a small typing hint while the user is typing, render:
+      <div className="typing-indicator">Typing…</div>
+     and toggle it from state while parse debounce is active.
+------------------------- */
