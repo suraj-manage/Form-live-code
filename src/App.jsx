@@ -282,6 +282,12 @@ export default function App() {
           const updated = replacePayloadInVBScript(base, jsonStr);
           setCodeCacheAndRef({ html: htmlCode, python: pythonCode, vbscript: updated });
           setLeftText(updated);
+        } else if (viewLang === "javascript") {
+          const jsonStr = JSON.stringify(payloadObj, null, 2);
+          const base = codeCacheRef.current.vbscript || vbCode;
+          const updated = replacePayloadInVBScript(base, jsonStr);
+          setCodeCacheAndRef({ html: htmlCode, python: pythonCode, vbscript: updated });
+          setLeftText(updated);
         } else {
           setCodeCacheAndRef({ html: htmlCode, python: pythonCode, vbscript: vbCode });
           setLeftText(htmlCode);

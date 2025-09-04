@@ -19,11 +19,11 @@ export default function QuestionQuotaEditor({ questions, qIndex, initialQuota, o
   const handleRemove = () => onRemove(qIndex);
 
   return (
-    <div style={{ marginTop: 10, padding: 10, borderRadius: 8, border: "1px solid #e6edf3", background: "#ffffff", opacity:'80%' }}>
-      <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>Quota for Question #{qIndex + 1}</div>
+    <div style={{ marginTop: 10, padding: 10, borderRadius: 8, border: "1px solid #e6edf3", background: "#ffffff", opacity:'95' }}>
+      <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600, color:"#504a4aff"}}>Quota for Question #{qIndex + 1}</div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
         <label style={{ fontSize: 13, color: "#334155" }}>Condition:</label>
-        <select value={condition} onChange={(e) => setCondition(e.target.value)} style={{ padding: "6px 8px", borderRadius: 6, color:"#14453f" }}>
+        <select value={condition} onChange={(e) => setCondition(e.target.value)} style={{ padding: "6px 1px", borderRadius: 6, color:"#14453f",border:"1px solid #10a594ff" }}>
           <option value="=" style={{color:"black"}}>=</option>
           <option value="<" style={{color:"black"}}>&lt;</option>
           <option value=">" style={{color:"black"}}>&gt;</option>
@@ -33,11 +33,11 @@ export default function QuestionQuotaEditor({ questions, qIndex, initialQuota, o
           placeholder="value"
           value={value}
           onChange={(e) => setValue(e.target.value === "" ? "" : Number(e.target.value))}
-          style={{ padding: "6px 8px", borderRadius: 6, width: 120 }}
+          style={{ padding: "6px 8px", borderRadius: 6, width: 120, color:"#504a4aff", border:"1px solid #10b8a4ff" }}
         />
         <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <input type="checkbox" checked={meetRequirement} onChange={(e) => setMeetRequirement(e.target.checked)} />
-          <span style={{ fontSize: 13 }}>Must meet</span>
+          <span style={{ fontSize: 13, color:"#504a4aff"}}>Must meet</span>
         </label>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
